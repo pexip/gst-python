@@ -48,7 +48,7 @@ pygst.py
 gst-libs
 log
 
-m4/*
+m4
 
 /gst/__init__.py
 /build
