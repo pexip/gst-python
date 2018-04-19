@@ -28,7 +28,9 @@ python_dep = python.dependency(required : true)
 
 python_abi_flags = python.get_variable('ABIFLAGS', '')
 pylib_loc = python.get_variable('LIBPL', '')
-assert(pylib_loc != '', 'Python dynamic library path could not be determined')
+if host_machine.system() != 'windows'
+    assert(pylib_loc != '', 'Python dynamic library path could not be determined')
+endif
 message('python_abi_flags = @0@'.format(python_abi_flags))
 message('pylib_loc = @0@'.format(pylib_loc))
 
