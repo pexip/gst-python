@@ -37,15 +37,16 @@ message('pylib_loc = @0@'.format(pylib_loc))
 pygi_override_dir = get_option('pygi-overrides-dir')
 if pygi_override_dir == ''
     cres = run_command(python, '-c','''
-import os, gi.overrides
+import os, sys, gi.overrides
 paths = gi.overrides.__path__
-prefix = '@0@'
+prefix = os.path.abspath(sys.argv[1])
 for path in paths:
+    path = os.path.abspath(path)
     if os.path.commonprefix([path, prefix]) == prefix:
         print(path)
         exit(0)
 exit(1)
-'''.format(get_option('prefix')))
+''', get_option('prefix'))
 
     if cres.returncode() != 0
         error('Could not detect PyGObject overrides location' + cres.stdout() + cres.stderr())
