@@ -26,20 +26,27 @@ pymod = import('python')
 python = pymod.find_installation(get_option('python'))
 python_dep = python.dependency(required : true)
 
-python_abi_flags = python.get_variable('ABIFLAGS', '')
 pylib_loc = get_option('libpython-dir')
+python_version = python_dep.version()
+python_abi_flags = python.get_variable('ABIFLAGS', '')
+pylib_suffix = 'so'
+if host_machine.system() == 'windows'
+  pylib_suffix = 'dll'
+elif host_machine.system() == 'darwin'
+  pylib_suffix = 'dylib'
+endif
+
 if pylib_loc == ''
   check_path_exists = 'import os, sys; assert(os.path.exists(sys.argv[1]))'
   pylib_loc = python.get_variable('LIBPL', '')
   if host_machine.system() != 'windows'
-    pylib_ldlibrary = python.get_variable('LDLIBRARY', '')
-    if host_machine.system() == 'darwin'
+    if pylib_loc == '' and host_machine.system() == 'darwin'
       # OSX is a pain. Python as shipped by apple installs libpython in /usr/lib
       # so we hardcode that. Other systems can use -Dlibpythondir to
       # override this.
       pylib_loc = '/usr/lib'
     else
-      if run_command(python, '-c', check_path_exists, join_paths(pylib_loc, pylib_ldlibrary)).returncode() != 0
+      if run_command(python, '-c', check_path_exists, join_paths(pylib_loc)).returncode() != 0
         # Workaround for Fedora
         pylib_loc = python.get_variable('LIBDIR', '')
         message('pylib_loc = @0@'.format(pylib_loc))
@@ -47,14 +54,19 @@ if pylib_loc == ''
     endif
 
     assert(
-      run_command(python, '-c', check_path_exists, join_paths(pylib_loc, pylib_ldlibrary)).returncode() == 0,
+      run_command(python, '-c', check_path_exists, join_paths(pylib_loc)).returncode() == 0,
       'Python dynamic library path could not be determined'
     )
   endif
 endif
 
-message('python_abi_flags = @0@'.format(python_abi_flags))
+pylib_path = join_paths(pylib_loc, 'libpython@0@@1@.@2@'.format(python_version, python_abi_flags, pylib_suffix))
+
 message('pylib_loc = @0@'.format(pylib_loc))
+message('python_version = @0@'.format(python_version))
+message('python_abi_flags = @0@'.format(python_abi_flags))
+message('pylib_suffix = @0@'.format(pylib_suffix))
+message('pylib_path = @0@'.format(pylib_path))
 
 pygi_override_dir = get_option('pygi-overrides-dir')
 
@@ -66,12 +78,6 @@ endif
 
 message('pygobject overrides directory = @0@'.format(pygi_override_dir))
 
-pylib_suffix = 'so'
-if host_machine.system() == 'windows'
-  pylib_suffix = 'dll'
-elif host_machine.system() == 'darwin'
-  pylib_suffix = 'dylib'
-endif
 cdata = configuration_data()
 cdata.set('PACKAGE', '"gst-python"')
 cdata.set('VERSION', '"@0@"'.format(gst_version))
@@ -79,10 +85,7 @@ cdata.set('GST_PACKAGE_NAME', '"GStreamer Python"')
 cdata.set('PACKAGE_NAME', '"GStreamer Python"')
 cdata.set('GST_API_VERSION', '"@0@"'.format(api_version))
 cdata.set('PLUGINDIR', '"@0@/gstreamer-1.0"'.format(get_option('libdir')))
-cdata.set('PY_LIB_LOC', '"@0@"'.format(pylib_loc))
-cdata.set('PY_ABI_FLAGS', '"@0@"'.format(python_abi_flags))
-cdata.set('PY_LIB_SUFFIX', '"@0@"'.format(pylib_suffix))
-cdata.set('PYTHON_VERSION', '"@0@"'.format(python_dep.version()))
+cdata.set('PY_LIB_PATH', '"@0@"'.format(pylib_path))
 configure_file(output : 'config.h', configuration : cdata)
 configinc = include_directories('.')
 

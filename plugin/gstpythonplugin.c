@@ -229,8 +229,12 @@ plugin_init (GstPlugin * plugin)
           "_Py_NoneStruct", &has_python) && has_python) {
     GST_LOG ("libpython is already loaded");
   } else {
+#ifdef PY_LIB_PATH
+    const gchar *libpython_path = PY_LIB_PATH;
+#else
     const gchar *libpython_path =
         PY_LIB_LOC "/libpython" PYTHON_VERSION PY_ABI_FLAGS "." PY_LIB_SUFFIX;
+#endif
     GST_LOG ("loading libpython from '%s'", libpython_path);
     libpython = g_module_open (libpython_path, 0);
     if (!libpython) {
