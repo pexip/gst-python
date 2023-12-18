@@ -680,7 +680,7 @@ pygst_debug_log (PyObject * pyobject, PyObject * string, GstDebugLevel level,
 #if PY_VERSION_HEX < 0x030a0000
     lineno = PyCode_Addr2Line (frame->f_code, frame->f_lasti);
 #else
-    lineno = PyFrame_GetLineNumber (frame)
+    lineno = PyFrame_GetLineNumber (frame);
 #endif
 
 #if PY_VERSION_HEX >= 0x030a0000
