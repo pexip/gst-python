@@ -656,27 +656,42 @@ pygst_debug_log (PyObject * pyobject, PyObject * string, GstDebugLevel level,
   frame = PyEval_GetFrame ();
 #if PY_MAJOR_VERSION >= 3
   {
+#if PY_VERSION_HEX < 0x030a0000
+    PyCodeObject *code = frame->f_code;
+#else
+    PyCodeObject *code = PyFrame_GetCode(frame);
+#endif
+
     PyObject *utf8;
     const gchar *utf8_str;
 
-    utf8 = PyUnicode_AsUTF8String (frame->f_code->co_name);
+    utf8 = PyUnicode_AsUTF8String (code->co_name);
     utf8_str = PyBytes_AS_STRING (utf8);
 
     function = g_strdup (utf8_str);
     Py_DECREF (utf8);
 
-    utf8 = PyUnicode_AsUTF8String (frame->f_code->co_filename);
+    utf8 = PyUnicode_AsUTF8String (code->co_filename);
     utf8_str = PyBytes_AS_STRING (utf8);
 
     filename = g_strdup (utf8_str);
     Py_DECREF (utf8);
+
+#if PY_VERSION_HEX < 0x030a0000
+    lineno = PyCode_Addr2Line (frame->f_code, frame->f_lasti);
+#else
+    lineno = PyFrame_GetLineNumber (frame);
+#endif
+
+#if PY_VERSION_HEX >= 0x030a0000
+    Py_DECREF(code);
+#endif
   }
 #else
   function = g_strdup (PyString_AsString (frame->f_code->co_name));
   filename =
       g_path_get_basename (PyString_AsString (frame->f_code->co_filename));
 #endif
-  lineno = PyCode_Addr2Line (frame->f_code, frame->f_lasti);
   /* gst_debug_log : category, level, file, function, line, object, format, va_list */
   if (isgstobject)
     object = G_OBJECT (pygobject_get (pyobject));
